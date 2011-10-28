@@ -101,8 +101,6 @@ class svm:
 		if param.svm_type in ['C_SVC','NU_SVC'] and nr_fold < 1:
 			svm_group_classes(prob,nr_class, label, start, count, perm)
 
-
-
 	def svm_get_type(self, model):
 		return model.param.svm_type
 
@@ -368,11 +366,6 @@ class svm:
 					n2 = count[j]
 					if param.nu * (n1 + n2)/2.0 > min(n1,n2):
 						return "specifies nu is infeasible"
-
-
-
-
-
 		else:
 			return None
 
