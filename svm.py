@@ -1,4 +1,5 @@
 import math
+import random
 
 import numpy
 
@@ -6,12 +7,16 @@ import svm_model
 import svm_problem
 import svm_paramter
 import kernel
+import decision_function
 
 class svm:
 	def __init__(self):
 		print "Fooy"
 	 
-    #
+    
+	def swap(self, i, j):
+		print "foo"
+	#
 	# Construct and solve various formulations 
 	# 
 	def solve_c_svc(self):
@@ -26,17 +31,59 @@ class svm:
 	def solve_epsilon_svr(self):
 		print "foo"
 
-	def solve_nu_svr(self):
-		print "foo"
+	def solve_nu_svr(self, prob, param, alpha, si):
+		l = prob.l
+		C = param.C
+		alpha2 = numpy.zeros(2*l, dtype = float)
+		linear_term = numpy.zeros(2*l,dtype = float)
+		
 
 	#
 	# Decision Functions
 	#
-	def svm_train_one(self):
-		print "foo"
+	def svm_train_one(self, prob, param, Cn, Cn):
+		alpha = numpy.zeros(prob.l, dtype = float)
+		si = Solver.SolutionInfo()
 
+		if param.svm_type is 'C_SVC':
+			solve_c_svc(prob, param, si, Cp, Cn)
+		elif param.svm_type is 'NU_SVC':
+			solve_nu_svc(prob, param, si, Cp, Cn)
+		elif param.svm_type is 'ONE_CLASS':
+			solve_one_class(prob, param, si, Cp, Cn)
+		elif param.svm_type is 'EPSILON_SVR':
+			solve_epsilon_svr(prob, param, si, Cp, Cn)
+		elif param.svm_type is 'NU_SVR':
+			solve_nu_svr(prob, param, si, Cp, Cn)
+
+		#TODO info("obj = %f, rho = %f\n",si.obj,si.rho);
+
+		# output SVs
+		nSv = int()
+		nBSV = int()
+		for i in range(prob.l):
+			if math.fabs(alpha[i]) > 0:
+				nSV += 1
+				if prob.y[i] > 0 and math.fabs(alpha[i]) >= si.upper_bound_p):
+					nBSV += 1
+			elif math.fabs(alpha[i]) >= si.upper_bound_n:
+				nBSV += 1
+
+		#TODO info("nSV = %d, nBSV = %d\n",nSV,nBSV);
+		f = decision_function()
+		f.alpha = alpha
+		f.rho = si.rho
+		return f
+		
 	def sigmoid_train(self):
 		print "foo"
+
+	def sigmoid_predict(decision_value, A, B ):
+		fApB = decision_value * A + B
+		if fApB > = 0
+			return exp(-fApB/(1.0 + exp(-fApB))
+		else:
+			return 1.0/(1 + exp(fApB))
 
 	def multiclass_probability(self):
 		print "foo"
@@ -45,47 +92,114 @@ class svm:
 		print "foo"
 
 	def svm_svr_probability(self, prob, param):
-		print "foo"
+		nr_fold = 5
+		ymv = numpy.array(prob.l, dtype = float)
+		mae = float()
+		
+        newparam = svm_parameter()
+		newparam.probability = 0
+		svm_cross_validation(prob, newparam, nr_fold, ymv)
+		for i in range(prob.l):
+			ymv[i] = prob.y[i] - ymv[i]
+			mae += math.fabs(ymv[i])
+		mae /= prob.l
+		std = math.sqrt(2*mae*mae)
+		count = 0
+		mae = 0
+		for i in range(prob.l):
+			if math.fabs(ymv[i]) > 5 * std:
+				count += 1
+			else:
+				mae += fabs(ymv[i])
+		mae /= (prob.l - count)
+		# TODO info("Prob. model for test data: target value = predicted value + z,\nz: Laplace distribution e^(-|z|/sigma)/(2sigma),sigma= %g\n",mae)
+		return mae
 
-	def svm_group_classes(self):
-		print "foo"
+	def svm_group_classes(self, prob, nr_class_retm label_ret, start_ret, count_ret, perm):
+		l = prob.l
+		max_nr_class = 16
+		nr_class = 0
+		label = numpy.zeros(max_nr_class, dtype = int)
+		count = numpy.zeros(max_nr_class, dtype = int)
+		data_label = numpy.zeros(l, dtype = int)
 
-	
+		for i in range(l):
+			this_label = (int)prob.y[i]
+			j = 0
+			for k in range(nr_class):
+				j = k
+				if this_label == label[j]:
+					count[j] += 1
+					break
+			
+			data_label[i] = j
+			if j is nr_class:
+				if nr_class is max_nr_class:
+					max_nr_class *= 2
+					zero = numpy.zero(max_nr_class, dtype = int)
+					label = numpy.append(label, zero)
+					count = numpy.append(label, zero)
+				label[nr_class] = this_label
+				count[nr_class] = 1
+				nr_class += 1
+				
+				start = numpy.zeros(nr_class, dtype = int)
+				start[0] = 0
+				
+			for i in range(1,nr_class):
+				start[i] = start[i -1] + count[i -1]
+			for i in range(l):
+				perm[start[data_label[i]]] = i
+				start[data_label[i]] += 1
+			start[0] = 0
+			for i in range(nr_class):
+				start[i] = start[i -1] + count[i -1]
+
 	#
 	# Interface Functions
 	#
 	def svm_train(self, prob, param):
-		model = svm_model
+		model = svm_model()
 		model.param = param
 		model.free_sv = 0 #XXX
 
         # regression or one-class-svm
 		if param.svm_type in ['ONE_CLASS','EPSILON_SVR','NU_SVR']:
 			model.nr_class = 2
-			model.label = none
-			model.nSV = none
-			model.probA = none
-			model.probB = none
+			model.label = None
+			model.nSV = None
+			model.probA = None
+			model.probB = None
+			model.sv_coef = numpy.zeros(1, dtype = float)
 			
 			if param.probability and param.svm_type in ['EPSILON_SVR','NU_SVR']:
-				print "TODO"
+			   model.probA = numpy.zeros(1, dtype = float)
+			   model.probA[0] = self.svm_svr_probability(prob,param)
 
 			f = svm_train_one(prob, param, 0,0)
-			model.rho = f.rho
+			model.rho = numpy.array(1, dtype = float)
+			model.rho[0] = f.rho
             
 			nSV = 0
+			for i in range(prob.l):
+				if math.abs(f.alpha[i]) > 0:
+					nSV += 1
+            model.l = nSV
+			#model.nSV = Malloc(svm_node *, nSV) TODO Check back on this
+			#model->sv_coef[0] = Malloc(double,nSV);
 			j = 0
-			for i in range(len(prob.l)):
+			for i in range(probe.l):
 				if math.fabs(f.alpha[i]) > 0:
 					model.SV[j] = prob.x[i]
 					model.sv_coef[0][j] = f.alpha[i]
+					j += 1
 		else:
 			l = prob.l
             nr_class = 0
-			label = 0
-			start = 0
-			count = 0
-			perm = 0
+			label = None
+			start = None
+			count = None
+			perm = numpy.array(l, dtype = float)
             
 			svm_group_classes(prob, nr_class, label, start, count, perm)
 			#TODO fix x
@@ -98,9 +212,82 @@ class svm:
 
     # Stratified cross validation
 	def svm_cross_validation(self, prob, param, nr_fold, target):
-		if param.svm_type in ['C_SVC','NU_SVC'] and nr_fold < 1:
-			svm_group_classes(prob,nr_class, label, start, count, perm)
+		fold_start = numpy.zeros(nr_fold + 1, dtype = int)
+		l = prob.l
+		perm = numpy.zeros(l, dtype = int)
+		nr_class = int()
 
+		# stratified cv may not give leave-one-out rate
+		# Each class to l folds -> some folds may have zero elements
+		
+		if param.svm_type in ['C_SVC','NU_SVC'] and nr_fold < 1:
+			start = numpy.array()
+			label = numpy.array()
+			count = numpy.array()
+			self.svm_group_classes(prob,nr_class, label, start, count, perm)
+
+			fold_count = numpy.zeros(nr_fold, dtype = int)
+			index = numpy.zeros(l, dtype = int)
+
+			for i in range(l):
+				index[i] = perm[i]
+
+			for c in range(nr_class):
+				for i in range(count[c]):
+					j = i + random.randint(0, count[c] - i)
+					self.swap(i,j)
+			
+			fold_start[0]=0
+			for i in range(1,nr_fold):
+				fold_start[i] = fold_start[i-1]+ fold_count[i-1]
+			for c in range(nr_class):
+				for i in rangenr(nr_fold):
+					begin = start[c] + i * count[c]/nr_fold
+					end = start[c] + (i + 1) * count[c]/nr_fold
+					for j in range(begin, end):
+						perm[fold_start[i]] = index[j]
+						fold_start[i] += 1
+			fold_start[0] = 0
+			for i in range(1, nr_fold):
+				fold_start[i] = fold_start[i-1] + fold_count[i -1]
+
+		else:
+			for i in range(l):
+				perm[i] = i
+			for i in range(l):
+				j = i + random.randint(0,l-i)
+				self.swap(perm[i], perm[j])
+			for i in range(nr_fold):
+				fold_start[i] = i*l/nr_fold
+
+<<<<<<< HEAD
+=======
+		for i in range(nr_fold):
+			begin = fold_start[i]
+            end = fold_start[i+1]
+			subprob = svm_problem()
+
+			k = 0
+			for j in range(begin):
+				subprob.x[k] = prob.x[perm[j]]
+				subprob.y[k] = prob.y[perm[j]]
+				k += 1
+
+			for j in range(end,l):
+				subprob.x[k] = prob.x[perm[j]]
+				subprob.y[k] = prob.y[perm[j]]
+                k += 1
+
+			submodel = self.svm_train(subprob, param)
+			if param.probability and param.svm_type  in ['C_SVC', 'NU_SVC']:
+				prob_estimates = numpy.zeros(svm_group_classes(submodel))
+				for j in range(begin,end):
+					target[perm[j]] = self.svm_predict_probability(submodel, prob.x[perm[j]], prob_estimates)
+			else:
+				for j in raneg(begin, end):
+					target[perm[j]] = svm_predict(submodel, prob.x[perm[j]])
+
+>>>>>>> 3edb84a6e87f426a0cc8ff035bd9f274507379a1
 	def svm_get_type(self, model):
 		return model.param.svm_type
 
@@ -279,7 +466,8 @@ class svm:
 		except:
 			return -1
 
-	def svm_load_model(self, model_file_name):
+    #TODO Finish
+	def svm_load_model(self, model_file_name):                               
 		try:
 			fp = open(model_file_name)
 		except:
