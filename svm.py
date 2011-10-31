@@ -220,7 +220,7 @@ class svm:
 		# stratified cv may not give leave-one-out rate
 		# Each class to l folds -> some folds may have zero elements
 		
-		if param.svm_type in ['C_SVC','NU_SVC'] and nr_fold < 1:
+		if param.svm_type in ['C_SVC','NU_SVC'] and nr_fold < l:
 			start = numpy.array()
 			label = numpy.array()
 			count = numpy.array()
@@ -260,8 +260,7 @@ class svm:
 			for i in range(nr_fold):
 				fold_start[i] = i*l/nr_fold
 
-<<<<<<< HEAD
-=======
+
 		for i in range(nr_fold):
 			begin = fold_start[i]
             end = fold_start[i+1]
@@ -286,8 +285,7 @@ class svm:
 			else:
 				for j in raneg(begin, end):
 					target[perm[j]] = svm_predict(submodel, prob.x[perm[j]])
-
->>>>>>> 3edb84a6e87f426a0cc8ff035bd9f274507379a1
+	
 	def svm_get_type(self, model):
 		return model.param.svm_type
 
