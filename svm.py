@@ -19,24 +19,137 @@ class svm:
 	#
 	# Construct and solve various formulations 
 	# 
-	def solve_c_svc(self):
-		print "foo"
+	def solve_c_svc(self, prob, param, alpha, si, Cp, Cn):
+		l = prob.l
+		minus_ones = numpy.zeros(l, dtype = float)
+		y = numpy.zeros(l, dtype = int)
+
+		for i in range(l):
+			alpha[i]  = 0
+			minus_ones[i] = -1
+			if prob.y[i] > 0:
+				y[i] = 1
+			else:
+				y[i] = -1
+
+		s = Solver()
+		s.Solve(l, SVC_(prob, param, y), minus_ones, y, alpha, Cp, Cn, param.eps, si, param.shrinking)
+
+		sum_alpha = double()
+		for i in range(l):
+			sum_alpha += alpha[i]
+
+		if Cp == Cn:
+			print "nu = " + str(sum_alpha/Cp * prob.l) #TODO info
+
+		for i in range(l):
+		 	alpha[i] *=  y[i]
+
+	def solve_nu_svc(self, prob, param, alpha, si):
+		l = prob.l
+        nu = param.nu
+        y = numpy.zeros(l, dtype = int)
+
+		for i in range(l):
+			if prob.y[i] > 0:
+				y[i] = 1
+			else:
+				y[i] = -1
+
+		sum_pos = nu*l/2
+		sum_neg = nu*l/2
+
+		for i in range(l):
+			if y[i] == 1:
+				alpha[i] = min(1.0, sum_pos)
+				sum_pos -= alpha[i]
+			else:
+				alpha = min(1.0, sum_neg)
+				sum_neg -= alpha[i]
+
+		zeros = numpy.zeros(l, dtype = float)
+
+		s = Solver_NU
+		s.Solve(l, SVC_Q(*prob, param, y), zeros, y, alpha, 1.0, 1.0, param.eps, si, param.shrinking)
+		r = si.r
+		
+		print "C = " + 1/r #TODO info
+
+		for i in range(l):
+			alpha[i] *= y[i]/r
+
+		si.rho /= r
+		si.obj /= (r*r)
+		si.upper_bound_n = 1/r
+		si.upper_bound_p = 1/r
 	
-	def solve_nu_svc(self):
-		print "foo"
+	def solve_one_class(self, prob, param, alpha, si):
+		l = prob.l
+		zeros = numpy.zeros(l, dtype = float)
+		ones = numpy.ones(l, dtype = float)
+		n = int(param.nu * prob.l) # Number of alpha's at upper bound
+		
+		for i in range(n):
+			alpha[i] = 1
+		if n < = prob.l
+			alpha[n] = param.nu * prob.l - n
+		if n + 1 < l:
+			for i in range(n+1, l):
+				alpha[i] = 0
 
-	def solve_one_class(self):
-		print "foo"
+		s = Solver()
+		s.Solve(l, ONE_CLASS_Q(prob, param), zeros, ones, alpha, 1.0, 1.0, param.eps, si, param.shrinking)
 
-	def solve_epsilon_svr(self):
-		print "foo"
+	def solve_epsilon_svr(selfi, prob, param, alpha, si):
+		l = prob.l
+		alpha2 = numpy.zeros(2*l, dtype = float)
+		linear_term = numpy.zeros(2*l, dtyple = float)
+		y = numpy.zeros(2*l, dtype = int)
+
+		for i in range(l):
+			linear_term[i] = param.p - prob.y[i]
+			y[i] = 1
+
+			linear_term[i+l] = param.p + prob.y[i]
+			y[i+l] = -1
+
+			s = Solve()
+			s.Solve(2*l, SVR_Q(prob, param), linear_term, y, alpha2, param.C, param.C, param.eps, si, param.shrinking)
+
+			sum_alpha = float()
+			for i in range(l):
+				alpha = alpha2[i] - alpha2[i + l]
+				sum_alpha += math.fabs(alpha[i])
+
+			#TODO Info
+			print "nu = " + str(sum_alpha/(param.C*l))
 
 	def solve_nu_svr(self, prob, param, alpha, si):
 		l = prob.l
 		C = param.C
 		alpha2 = numpy.zeros(2*l, dtype = float)
 		linear_term = numpy.zeros(2*l,dtype = float)
-		
+		y = numpy.zeros(2*l, dtype = int)
+
+		sum = C * param.nu * l /2
+		for i in range(l):
+			alpha2 = min(sum, C)
+			alpha2[i+l] = min(sum,C)
+			sum -= alpha2[i]
+			
+			linear_term[i] = -1 * prob.y[i]
+			y[i] = 1
+
+			linear_term[i + l] = prob.y[i]
+			y[i +l] = -1
+
+		s = Solver_NU()
+		s.Solve(2*l, SVR_Q(prob, param), linear_term, y, alpha2, C, C, param.eps, si, param.shrinking)
+		#TODO Info
+		print "epsilon = " + str(-si.r)
+
+		for i in range(l):
+			alpha[i] = alpha2[i] - alpha2[i +l]
 
 	#
 	# Decision Functions
@@ -74,7 +187,7 @@ class svm:
 		f.alpha = alpha
 		f.rho = si.rho
 		return f
-		
+
 	def sigmoid_train(self):
 		print "foo"
 
